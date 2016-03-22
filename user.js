@@ -9,6 +9,8 @@ Parse.Cloud.beforeSave(Parse.User, function(request, response) {
   // Save the user's name in lowercase also so we can search easier.
   if (request.object.get("name")) {
     request.object.set("lowercaseName", request.object.get("name").toLowerCase())
+	request.object.set("firstNameLowercase", request.object.get("firstName").toLowerCase())
+	request.object.set("lastNameLowercase", request.object.get("lastName").toLowerCase())
   }
   response.success();  
 });

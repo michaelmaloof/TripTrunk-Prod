@@ -316,7 +316,7 @@ Parse.Cloud.afterSave('Activity', function(request) {
 
   var toUser = request.object.get("toUser");
   if (!toUser) {
-    throw "Undefined toUser. Skipping push for Activity " + request.object.get('type') + " : " + request.object.id;
+    throw "Undefined toUser. Skipping push for Activity " + request.object.get("type") + " : " + request.object.id;
     return;
   }
 
@@ -327,16 +327,17 @@ Parse.Cloud.afterSave('Activity', function(request) {
   };
 
   var query = new Parse.Query(Parse.Installation);
-  query.equalTo('user', toUser);
+  query.equalTo("user", toUser);
 
   var trip;
 
   // If it's addToTrip, we'll populate the Trip before we call the Push Notification.
   // It's redundant code, but it saves refactoring everything right now.
-  if (request.object.get('type') === 'addToTrip') {
+  
+  if (request.object.get("type") === "addToTrip") {
       // Check if the trunk is private or not.
-      request.object.get('trip').fetch().then(function(thisTrip) {
-        request.object.set('trip', thisTrip);
+      request.object.get("trip").fetch().then(function(thisTrip) {
+        request.object.set("trip", thisTrip);
         console.log(trip);
 
         Parse.Push.send({
@@ -344,20 +345,50 @@ Parse.Cloud.afterSave('Activity', function(request) {
           data: alertPayload(request)
         }).then(function() {
           // Push was successful
-          console.log('Sent push.');
+          console.log("Sent push.");
         }, function(error) {
           throw "Push Error " + error.code + " : " + error.message;
         });
 
       });
   }
+  // else if (request.object.get("type") === "like") {
+//
+// 	  var likedTrip;
+// 	  var tripDetail;
+//
+// 	  throw "action type : like";
+// 	  var tripQuery = new Parse.Query("Trip");
+// 	  tripQuery.get(request.object.get("trip").id, {
+// 		  sucess: function(likedTrip){
+// 			  request.object.set("trip", likedTrip);
+// 			  console.log(likedTrip);
+// 			  var publicDetailQuery = new Parse.Query("PublicTripDetail");
+// 			  publicDetailQuery.get(likedTrip.object.get("publicTripDetail").id, {
+// 				  sucess: function(tripDetail){
+// 					  tripDetail.increment("totalLikes");
+// 					  tripDetail.save();
+// 					  console.log("Found Liked tripDetail" + tripDetail + " and updated");
+// 				  },
+// 				  error: function(error){
+// 				  	console.log("Find PublicTripDetail Error when user do action 'like' a photo");
+// 				  }
+//
+// 			  });
+// 		  },
+// 		  error: function(error){
+// 			  console.log("Find Trip Error when user do action 'like' a photo");
+// 		  }
+// 	  });
+//
+//   }
   else {
     Parse.Push.send({
       where: query, // Set our Installation query.
       data: alertPayload(request)
     }).then(function() {
       // Push was successful
-      console.log('Sent push.');
+      console.log("Sent push.");
     }, function(error) {
       throw "Push Error " + error.code + " : " + error.message;
     });
@@ -368,39 +399,52 @@ var alertMessage = function(request) {
   var message = "";
 
   if (request.object.get("type") === "comment") {
-    if (request.user.get('username') && request.user.get('name')) {
-      message = request.user.get('username') + ' said: ' + request.object.get('content').trim();
+    if (request.user.get("username") && request.user.get("name")) {
+      message = request.user.get("username") + " said: " + request.object.get("content").trim();
     } else {
       message = "Someone commented on your photo.";
     }
-  } else if (request.object.get("type") === "like") {
-    if (request.user.get('username') && request.user.get('name')) {
-      message = request.user.get('username') + ' likes your photo.';
+  } else  if (request.object.get("type") === "mention") {
+	  var mentionType = "comment!";
+	  if(request.object.get("isCaption") ){
+		  mentionType = "photo caption!";
+	  }
+	  
+    if (request.user.get("username") && request.user.get("name")) {
+      message = request.user.get("username") + " mentioned you in a " + mentionType;
     } else {
-      message = 'Someone likes your photo.';
+      message = "Someone mentioned you in a " + mentionType;
+    }
+	
+	
+  } else if (request.object.get("type") === "like") {
+    if (request.user.get("username") && request.user.get("name")) {
+      message = request.user.get("username") + " likes your photo.";
+    } else {
+      message = "Someone likes your photo.";
     }
   } else if (request.object.get("type") === "follow") {
-    if (request.user.get('username') && request.user.get('name')) {
-      message = request.user.get('name') + ' (@' + request.user.get('username') + ')' + ' started following you.';
+    if (request.user.get("username") && request.user.get("name")) {
+      message = request.user.get("name") + "(@" + request.user.get("username") + ")" + " started following you.";
     } else {
       message = "You have a new follower.";
     }
   } else if (request.object.get("type") === "addToTrip") {
-    if (request.user.get('username') && request.user.get('name')) {
+    if (request.user.get("username") && request.user.get("name")) {
 
-        if(request.object.get('trip').get('isPrivate')) {
-          message = request.user.get('username') + ' added you to a private trunk.';
+        if(request.object.get("trip").get("isPrivate")) {
+          message = request.user.get("username") + " added you to a private trunk.";
         }
         else {
-          message = request.user.get('username') + ' added you to a trunk.';
+          message = request.user.get("username") + " added you to a trunk.";
         }
 
     } else {
       message = "You were added to a trunk.";
     }
   } else if (request.object.get("type") === "pending_follow") {
-    if (request.user.get('username') && request.user.get('name')) {
-      message = request.user.get('name') + ' (@' + request.user.get('username') + ')' + ' requested to follow you.';
+    if (request.user.get("username") && request.user.get("name")) {
+      message = request.user.get("name") + " (@" + request.user.get("username") + ")" + " requested to follow you.";
     } else {
       message = "You have a new follower request.";
     }
@@ -426,6 +470,14 @@ var alertPayload = function(request) {
       fu: request.object.get('fromUser').id, // From User
       pid: request.object.get('photo').id // Photo Id
     };
+  } else if (request.object.get("type") === "mention") {
+	  return {
+	  	alert: alertMessage(request), // Set our alert message.
+	  	p: 'a', // Payload Type: Activity
+      	t: 'm', // Activity Type: Mention
+      	fu: request.object.get('fromUser').id, // From User
+		pid: request.object.get('photo').id // Photo Id
+	  };
   } else if (request.object.get("type") === "like") {
     return {
       alert: alertMessage(request), // Set our alert message.
